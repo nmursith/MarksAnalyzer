@@ -10,10 +10,14 @@ public class SeriesMarks {
     public String name;
     public ArrayList<String> seriesChem;
     public ArrayList<String> seriesPhy;
+    public String  physicsAttendance[];
+    public String chemistryAttendance[];
 
     public SeriesMarks(){
         seriesPhy = new ArrayList<>();
         seriesChem = new ArrayList<>();
+        physicsAttendance = new String[2];
+        chemistryAttendance = new String[2];
     }
 
     public SeriesMarks(String name, String indexNo){
@@ -50,6 +54,8 @@ public class SeriesMarks {
     public ArrayList<String> getSeriesPhy() {
         return seriesPhy;
     }
+
+
 
     public void addSeriesPhy(String seriesPhy) {
         this.seriesPhy.add(seriesPhy);

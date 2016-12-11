@@ -69,9 +69,12 @@ public class Solution extends Application {
             @Override
             public void handle(Event event) {
 //                System.out.println("X: " + mouseEvent.getX() + " Y: " + mouseEvent.getY());
-                if(id<35) {
+                if(id<controller.table.size()) {
                     controller.save(id);
                     id++;
+                }
+                else {
+                    id =0;
                 }
             }
 

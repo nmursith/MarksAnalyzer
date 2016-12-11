@@ -6,15 +6,17 @@ import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.geometry.Bounds;
+import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.*;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
+import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.text.Text;
+import javafx.scene.text.*;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.poi.sl.usermodel.PictureData;
@@ -43,6 +45,9 @@ public class Controller {
     public GridPane individual_seperate;
     public GridPane individual_overall;
     public ComboBox batch_student;
+    public Label identity;
+    public Label subject_attendance;
+    public Label attendance;
     protected Hashtable<String, SeriesMarks> table;
     protected ArrayList<SeriesMarks> batchMarks;
     protected ArrayList<String> name;
@@ -52,6 +57,7 @@ public class Controller {
         batchMarks =new ArrayList<>();
         name =new ArrayList<>();
         readFile(new File("marks.xlsx"));
+        readAttendanceFile(new File("attendance.xlsx"));
 
         batch_student.getItems().addAll(name);
 
@@ -65,7 +71,7 @@ public class Controller {
 
 
 
-    public void process(int id){
+    public synchronized void process(int id){
         final  String phy = "Physics";
         final  String chem = "Chemistry";
         SeriesMarks seriesMarks = batchMarks.get(id);//table.get(key);
@@ -110,19 +116,50 @@ public class Controller {
         final NumberAxis yAxis = new NumberAxis(0,100,1);
         final BarChart<String,Number> bc =
                 new BarChart<String,Number>(xAxis,yAxis);
+
         yAxis.setLowerBound(0);
         yAxis.setUpperBound(100);
 
-        bc.setTitle("Overall Summary");
+        bc.setTitle("Summary");
         xAxis.setLabel("Subject");
         yAxis.setLabel("Marks");
 
+        xAxis.setTickLabelFont(new Font("System", 16));
 
         for(int j=0; j<marksChem.length; j++){
             XYChart.Series series = new XYChart.Series();
-            series.setName("Test "+ (j+1));
-            series.getData().add(new XYChart.Data(phy, marksPhy[j]));
-            series.getData().add(new XYChart.Data(chem, marksChem[j]));
+            String name ="Test " +(j+1);
+            if(j== marksChem.length-1)
+                name = "3rd Term Test";
+
+            series.setName(name);
+            XYChart.Data<String, Number> dataPhy = new XYChart.Data(phy, marksPhy[j]);
+            XYChart.Data<String, Number> dataChem = new XYChart.Data(chem, marksChem[j]);
+
+
+
+                dataChem.nodeProperty().addListener(new ChangeListener<Node>() {
+                    @Override public void changed(ObservableValue<? extends Node> ov, Node oldNode, final Node node) {
+                        if (node != null) {
+
+                            displayLabelForData(dataChem);
+                        }
+                    }
+                });
+
+                dataPhy.nodeProperty().addListener(new ChangeListener<Node>() {
+                    @Override public void changed(ObservableValue<? extends Node> ov, Node oldNode, final Node node) {
+                        if (node != null) {
+
+                            displayLabelForData(dataPhy);
+                        }
+                    }
+                });
+
+
+
+            series.getData().add(dataPhy);
+            series.getData().add(dataChem);
             bc.getData().add(series);
         }
 
@@ -135,26 +172,42 @@ public class Controller {
        }
         individual_overall.addRow(0,bc);
 
-        for (final XYChart.Series<String, Number> series : bc.getData()) {
+/*        for (final XYChart.Series<String, Number> series : bc.getData()) {
             for (final XYChart.Data<String, Number> data : series.getData()) {
 
-                displayLabelForData(data);
+
+
+                data.nodeProperty().addListener(new ChangeListener<Node>() {
+                    @Override public void changed(ObservableValue<? extends Node> ov, Node oldNode, final Node node) {
+                        if (node != null) {
+
+                            displayLabelForData(data);
+                        }
+                    }
+                });
+
                 Tooltip tooltip = new Tooltip();
                 tooltip.setText(data.getYValue().toString());
                 Tooltip.install(data.getNode(), tooltip);
 
             }
-        }
+        }*/
 /*************************/
         final CategoryAxis xAxisPhy = new CategoryAxis(); //1, 12, 1
         final NumberAxis yAxisPhy = new NumberAxis(0,100,1);
+        xAxisPhy.setTickLabelFont(new Font("System", 16));
 
         final StackedAreaChart<String,Number> stackedAreaChartPhysic = new StackedAreaChart<>(xAxisPhy,yAxisPhy);
         XYChart.Series series3 = new XYChart.Series();
         series3.setName("Physics");
 
         for(int j=0; j<marksPhy.length; j++) {
-            series3.getData().add(new XYChart.Data("Test " +(j+1), marksPhy[j]));
+            String name ="Test " +(j+1);
+            if(j== marksPhy.length-1)
+                name = "3rd Term Test";
+
+
+            series3.getData().add(new XYChart.Data(name, marksPhy[j]));
 
         }
         stackedAreaChartPhysic.setTitle("Stacked Area Chart Physics");
@@ -164,13 +217,18 @@ public class Controller {
 
         final CategoryAxis xAxisChem = new CategoryAxis();
         final NumberAxis yAxisChem = new NumberAxis(0,100,1);
-
+        xAxisChem.setTickLabelFont(new Font("System", 16));
         final StackedAreaChart<String,Number>  stackedAreaChartChem = new StackedAreaChart<>(xAxisChem,yAxisChem);
         XYChart.Series series4 = new XYChart.Series();
         series4.setName("Chemistry");
 
         for(int j=0; j<marksPhy.length; j++) {
-            series4.getData().add(new XYChart.Data("Test " +(j+1), marksChem[j]));
+
+            String name ="Test " +(j+1);
+            if(j== marksChem.length-1)
+                name = "3rd Term Test";
+
+            series4.getData().add(new XYChart.Data(name, marksChem[j]));
 
         }
        // series4.getNode().lookup(".chart-series-stacked-area").setStyle("-fx-stroke-width: 1px; -fx-stroke: blue;");
@@ -181,13 +239,21 @@ public class Controller {
         individual_seperate.getChildren().clear();
         individual_seperate.addRow(0, stackedAreaChartPhysic);
         individual_seperate.addRow(1, stackedAreaChartChem);
-
+        identity.setText(seriesMarks.getIndexNo());
+        identity.setAlignment(Pos.CENTER);
+        subject_attendance.setText("Physics : "+  seriesMarks.physicsAttendance[0] +"/" +seriesMarks.physicsAttendance[1]   +"\t" + "Chemistry: " +
+                seriesMarks.chemistryAttendance[0] +"/" +seriesMarks.chemistryAttendance[1]);
 //        individual_seperate.getChildren().add(1, bc);
 
     }
     private void displayLabelForData(XYChart.Data<String, Number> data) {
         final Node node = data.getNode();
-        final Text dataText = new Text(data.getYValue() + "");
+        String text = data.getYValue().intValue() +"";
+        if(data.getYValue().doubleValue() == 0.0){
+            text = "absent";
+        }
+        final Text dataText = new Text(text + "");
+
         node.parentProperty().addListener(new ChangeListener<Parent>() {
             @Override public void changed(ObservableValue<? extends Parent> ov, Parent oldParent, Parent parent) {
                 Group parentGroup = (Group) parent;
@@ -314,6 +380,83 @@ public class Controller {
 
     }
 
+
+
+    public void readAttendanceFile(File file)  {
+
+        try {
+            FileInputStream fis = new FileInputStream(file); //new File("marks.xlsx")
+            XSSFWorkbook workbook = new XSSFWorkbook(fis);
+            XSSFSheet spreadsheet = workbook.getSheetAt(0);
+            Iterator<Row> rowIterator = spreadsheet.iterator();
+            XSSFRow row;
+            int id =0;
+            while (rowIterator.hasNext())
+            {
+
+                row = (XSSFRow) rowIterator.next();
+                Iterator <Cell> cellIterator = row.cellIterator();
+
+                if(id<1){
+                    id++;
+                    continue;
+                }
+
+                try {
+                    SeriesMarks series = table.get(getValue(row.getCell(0)));
+
+                    series.chemistryAttendance[0] = subString(getValue(row.getCell(2)));
+                    series.chemistryAttendance[1] = subString(getValue(row.getCell(3)));
+
+                    series.physicsAttendance[0] = subString(getValue(row.getCell(4)));
+                    series.physicsAttendance[1] = subString(getValue(row.getCell(5)));
+                }
+                catch (Exception e){
+                  //  e.printStackTrace();
+                }
+
+
+
+/*
+                seriesMarks.addSeriesChem(getValue(row.getCell(2)));
+                seriesMarks.addSeriesChem(getValue(row.getCell(4)));
+
+                seriesMarks.addSeriesPhy(getValue(row.getCell(3)));
+                seriesMarks.addSeriesPhy(getValue(row.getCell(5)));
+*/
+
+
+
+                while ( cellIterator.hasNext())
+                {
+
+
+                    Cell cell = cellIterator.next();
+
+
+                    switch (cell.getCellType())
+                    {
+                        case Cell.CELL_TYPE_NUMERIC:
+                            System.out.print(  cell.getNumericCellValue() + " \t\t " );
+                            break;
+                        case Cell.CELL_TYPE_STRING:
+                            System.out.print( cell.getStringCellValue() + " \t\t " );
+                            break;
+                    }
+                }
+                System.out.println();
+            }
+            fis.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public  String subString(String temp){
+
+        return  temp.substring(0, temp.indexOf("."));
+    }
     public String getValue(Cell cell){
 
         String object = null;
@@ -350,19 +493,28 @@ public class Controller {
 
     }
 
-    public void save(int index){
+    public synchronized  void  save(int index){
         process(index);
+        try {
+            Thread.sleep(20);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         batch_student.getSelectionModel().select(index);
-        System.out.println("running");
+        System.out.println("running  " + index);
         //XSLFSlide slide = ppt.createSlide();
         BufferedImage screencapture = null;
         try {
             screencapture = new Robot().createScreenCapture(new Rectangle(2, 92, 1365, 620));
+
+            Thread.sleep(10);
             File temp = new File(batchMarks.get(index).getIndexNo() + ".png");
             ImageIO.write(screencapture, "png", temp);
         } catch (AWTException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }

@@ -13,6 +13,7 @@ import javafx.scene.Parent;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.control.Label;
+import javafx.scene.image.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.*;
@@ -34,6 +35,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.*;
@@ -48,11 +50,18 @@ public class Controller {
     public Label identity;
     public Label subject_attendance;
     public Label attendance;
+    public Label visonLogo;
     protected Hashtable<String, SeriesMarks> table;
     protected ArrayList<SeriesMarks> batchMarks;
     protected ArrayList<String> name;
     private  Stage stage;
     public void init() {
+        javafx.scene.image.Image image = new javafx.scene.image.Image(getClass().getResourceAsStream("appIcon.jpg"));
+        ImageView imv = new ImageView(image);
+        imv.setFitWidth(90);
+        imv.setFitHeight(90);
+        visonLogo.setGraphic(imv);
+
         table = new Hashtable<>();
         batchMarks =new ArrayList<>();
         name =new ArrayList<>();
@@ -239,9 +248,13 @@ public class Controller {
         individual_seperate.getChildren().clear();
         individual_seperate.addRow(0, stackedAreaChartPhysic);
         individual_seperate.addRow(1, stackedAreaChartChem);
-        identity.setText(seriesMarks.getIndexNo());
+        System.out.println(seriesMarks.getName());
+        identity.setText("  "+seriesMarks.getIndexNo() + " :- " + seriesMarks.getName() +"  ");
+        //identity.setText(seriesMarks.getIndexNo());
         identity.setAlignment(Pos.CENTER);
+
         subject_attendance.setText("Physics : "+  seriesMarks.physicsAttendance[0] +"/" +seriesMarks.physicsAttendance[1]   +"\t" + "Chemistry: " +
+
                 seriesMarks.chemistryAttendance[0] +"/" +seriesMarks.chemistryAttendance[1]);
 //        individual_seperate.getChildren().add(1, bc);
 
@@ -482,6 +495,7 @@ public class Controller {
         int index = batch_student.getSelectionModel().getSelectedIndex();
         try {
             process(index);
+            save(index);
 
 
 
@@ -496,27 +510,32 @@ public class Controller {
     public synchronized  void  save(int index){
         process(index);
         try {
-            Thread.sleep(20);
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         batch_student.getSelectionModel().select(index);
         System.out.println("running  " + index);
         //XSLFSlide slide = ppt.createSlide();
-        BufferedImage screencapture = null;
-        try {
-            screencapture = new Robot().createScreenCapture(new Rectangle(2, 92, 1365, 620));
 
-            Thread.sleep(10);
-            File temp = new File(batchMarks.get(index).getIndexNo() + ".png");
-            ImageIO.write(screencapture, "png", temp);
-        } catch (AWTException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
+        Platform.runLater(() -> {
+            try {
+                BufferedImage screencapture = null;
+                screencapture = new Robot().createScreenCapture(new Rectangle(2, 85, 1365, 620));
+                //File temp = new File(batchMarks.get(index).getIndexNo() + ".png");
+                File temp = new File(index + ".png");
+                ImageIO.write(screencapture, "png", temp);
+            } catch (AWTException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+
+        });
     }
 
     public void createSlide(ActionEvent actionEvent) {

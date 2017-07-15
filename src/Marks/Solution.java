@@ -10,10 +10,11 @@ import javafx.scene.CacheHint;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-
+import javafx.scene.image.Image;
 
 import java.io.*;
 import java.util.Hashtable;
@@ -53,6 +54,8 @@ public class Solution extends Application {
         primaryStage.setWidth(bounds.getWidth());
         primaryStage.setHeight(bounds.getHeight());
         primaryStage.show();
+
+
 
         System.out.println("Controller Starting");
         Controller controller= fxmlLoader.<Controller>getController();

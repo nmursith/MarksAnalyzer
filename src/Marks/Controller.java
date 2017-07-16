@@ -1,5 +1,6 @@
 package Marks;
 
+import com.sun.xml.internal.bind.v2.model.core.ID;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -36,6 +37,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.Image;
+import java.awt.geom.Arc2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.*;
@@ -48,10 +50,12 @@ public class Controller {
     public GridPane individual_overall;
     public ComboBox batch_student;
     public Label identity;
-    public Label subject_attendance;
+    public Label subject_attendance1;
     public Label attendance;
     public Label visonLogo;
+    public Label subject_attendance2;
     protected Hashtable<String, SeriesMarks> table;
+    protected Hashtable<Integer, String> IDMap;
     protected ArrayList<SeriesMarks> batchMarks;
     protected ArrayList<String> name;
     private  Stage stage;
@@ -63,6 +67,7 @@ public class Controller {
         visonLogo.setGraphic(imv);
 
         table = new Hashtable<>();
+        IDMap = new Hashtable<>();
         batchMarks =new ArrayList<>();
         name =new ArrayList<>();
         readFile(new File("marks.xlsx"));
@@ -86,7 +91,7 @@ public class Controller {
         final  String math = "C.Maths";
         final  String bio = "Biology";
 
-        SeriesMarks seriesMarks = batchMarks.get(id);//table.get(key);
+        SeriesMarks seriesMarks = table.get(IDMap.get(id));
 
         float marksPhy [] = new float[seriesMarks.getSeriesPhy().size()];
         float marksChem [] = new float[seriesMarks.getSeriesChem().size()];
@@ -100,7 +105,7 @@ public class Controller {
             try {
 
                 String marks = obj;
-
+                System.out.println(marks);
                 float temp = Float.parseFloat(marks);
                 marksPhy[i] = temp;
             }
@@ -128,6 +133,39 @@ public class Controller {
 
         }
 
+    i=0;
+    if(seriesMarks.isMaths) {
+        for (Object obj : seriesMarks.getSeriesMath()) {
+
+            try {
+                String marks = (String) obj;
+
+                float temp = Float.parseFloat(marks);
+                marksMath[i] = temp;
+            } catch (NullPointerException | NumberFormatException e) {
+                marksMath[i] = 0;
+            }
+            i++;
+
+        }
+    }
+        else {
+
+        for (Object obj : seriesMarks.getSeriesBio()) {
+
+            try {
+                String marks = (String) obj;
+
+                float temp = Float.parseFloat(marks);
+                    marksBio[i] = temp;
+            } catch (NullPointerException | NumberFormatException e) {
+                marksBio[i] = 0;
+            }
+            i++;
+
+        }
+    }
+
         final CategoryAxis xAxis = new CategoryAxis();
         final NumberAxis yAxis = new NumberAxis(0,100,1);
         final BarChart<String,Number> bc =
@@ -136,48 +174,44 @@ public class Controller {
         yAxis.setLowerBound(0);
         yAxis.setUpperBound(100);
 
-        bc.setTitle("Summary");
-        xAxis.setLabel("Subject");
+        String  subject = seriesMarks.isMaths()?"C.Maths":"Biology";
+        float [] subject_M_B = seriesMarks.isMaths? marksMath:marksBio;
+
+        bc.setTitle("Marks in "+ subject);
+        xAxis.setLabel(subject);
         yAxis.setLabel("Marks");
 
         xAxis.setTickLabelFont(new Font("System", 16));
 
-        for(int j=0; j<marksChem.length; j++){
+        for(int j=0; j<subject_M_B.length; j++){
             XYChart.Series series = new XYChart.Series();
             String name ="Test " +(j+1);
-            if(j== marksChem.length-1)
-                name = "3rd Term Test";
-
             series.setName(name);
-            XYChart.Data<String, Number> dataPhy = new XYChart.Data(phy, marksPhy[j]);
-            XYChart.Data<String, Number> dataChem = new XYChart.Data(chem, marksChem[j]);
+            XYChart.Data<String, Number> data = new XYChart.Data(subject, subject_M_B[j]);
+          //  XYChart.Data<String, Number> dataChem = new XYChart.Data(chem, marksChem[j]);
 
 
-
-                dataChem.nodeProperty().addListener(new ChangeListener<Node>() {
+            data.nodeProperty().addListener(new ChangeListener<Node>() {
                     @Override public void changed(ObservableValue<? extends Node> ov, Node oldNode, final Node node) {
                         if (node != null) {
 
-                            displayLabelForData(dataChem);
-                        }
-                    }
-                });
-
-                dataPhy.nodeProperty().addListener(new ChangeListener<Node>() {
-                    @Override public void changed(ObservableValue<? extends Node> ov, Node oldNode, final Node node) {
-                        if (node != null) {
-
-                            displayLabelForData(dataPhy);
+                            displayLabelForData(data);
                         }
                     }
                 });
 
 
 
-            series.getData().add(dataPhy);
-            series.getData().add(dataChem);
+            series.getData().add(data);
+
             bc.getData().add(series);
+
+            setMaxBarWidth(bc, xAxis, yAxis, 40, 10);
+            bc.widthProperty().addListener((obs,b,b1)->{
+                Platform.runLater(()->setMaxBarWidth(bc, xAxis, yAxis, 40, 10));
+            });
         }
+
 
         try {
             individual_overall.getChildren().remove(0);
@@ -188,79 +222,122 @@ public class Controller {
        }
         individual_overall.addRow(0,bc);
 
-/*        for (final XYChart.Series<String, Number> series : bc.getData()) {
-            for (final XYChart.Data<String, Number> data : series.getData()) {
 
 
-
-                data.nodeProperty().addListener(new ChangeListener<Node>() {
-                    @Override public void changed(ObservableValue<? extends Node> ov, Node oldNode, final Node node) {
-                        if (node != null) {
-
-                            displayLabelForData(data);
-                        }
-                    }
-                });
-
-                Tooltip tooltip = new Tooltip();
-                tooltip.setText(data.getYValue().toString());
-                Tooltip.install(data.getNode(), tooltip);
-
-            }
-        }*/
-/*************************/
-        final CategoryAxis xAxisPhy = new CategoryAxis(); //1, 12, 1
+        final CategoryAxis xAxisPhy = new CategoryAxis();
         final NumberAxis yAxisPhy = new NumberAxis(0,100,1);
+        final BarChart<String,Number> bcPhy =
+                new BarChart<String,Number>(xAxisPhy,yAxisPhy);
+
+        yAxisPhy.setLowerBound(0);
+        yAxisPhy.setUpperBound(100);
+
+         subject = phy;
+        subject_M_B = marksPhy;
+
+        bcPhy.setTitle("Marks in "+ subject);
+        xAxisPhy.setLabel(subject);
+        yAxisPhy.setLabel("Marks");
+
         xAxisPhy.setTickLabelFont(new Font("System", 16));
 
-        final StackedAreaChart<String,Number> stackedAreaChartPhysic = new StackedAreaChart<>(xAxisPhy,yAxisPhy);
-        XYChart.Series series3 = new XYChart.Series();
-        series3.setName("Physics");
-
-        for(int j=0; j<marksPhy.length; j++) {
+        for(int j=0; j<subject_M_B.length; j++){
+            XYChart.Series series = new XYChart.Series();
             String name ="Test " +(j+1);
-            if(j== marksPhy.length-1)
-                name = "3rd Term Test";
+            series.setName(name);
+            XYChart.Data<String, Number> data = new XYChart.Data(subject, subject_M_B[j]);
+            data.nodeProperty().addListener(new ChangeListener<Node>() {
+                @Override public void changed(ObservableValue<? extends Node> ov, Node oldNode, final Node node) {
+                    if (node != null) {
 
+                        displayLabelForData(data);
+                    }
+                }
+            });
 
-            series3.getData().add(new XYChart.Data(name, marksPhy[j]));
+            series.getData().add(data);
 
+            bcPhy.getData().add(series);
+
+            setMaxBarWidth(bcPhy, xAxisPhy, yAxisPhy, 40, 10);
+            bcPhy.widthProperty().addListener((obs,b,b1)->{
+                Platform.runLater(()->setMaxBarWidth(bcPhy, xAxisPhy, yAxisPhy, 40, 10));
+            });
         }
-        stackedAreaChartPhysic.setTitle("Stacked Area Chart Physics");
-        stackedAreaChartPhysic.getData().addAll(series3);
+
+
+
+
 
 
 
         final CategoryAxis xAxisChem = new CategoryAxis();
         final NumberAxis yAxisChem = new NumberAxis(0,100,1);
+        final BarChart<String,Number> bcChem =
+                new BarChart<String,Number>(xAxisChem,yAxisChem);
+
+        yAxisChem.setLowerBound(0);
+        yAxisChem.setUpperBound(100);
+
+        subject = chem;
+        subject_M_B = marksChem;
+
+        bcChem.setTitle("Marks in "+ subject);
+        xAxisChem.setLabel(subject);
+        yAxisChem.setLabel("Marks");
+
         xAxisChem.setTickLabelFont(new Font("System", 16));
-        final StackedAreaChart<String,Number>  stackedAreaChartChem = new StackedAreaChart<>(xAxisChem,yAxisChem);
-        XYChart.Series series4 = new XYChart.Series();
-        series4.setName("Chemistry");
 
-        for(int j=0; j<marksPhy.length; j++) {
-
+        for(int j=0; j<subject_M_B.length; j++){
+            XYChart.Series series = new XYChart.Series();
             String name ="Test " +(j+1);
-            if(j== marksChem.length-1)
-                name = "3rd Term Test";
+            series.setName(name);
+            XYChart.Data<String, Number> data = new XYChart.Data(subject, subject_M_B[j]);
+            data.nodeProperty().addListener(new ChangeListener<Node>() {
+                @Override public void changed(ObservableValue<? extends Node> ov, Node oldNode, final Node node) {
+                    if (node != null) {
 
-            series4.getData().add(new XYChart.Data(name, marksChem[j]));
+                        displayLabelForData(data);
+                    }
+                }
+            });
+
+            series.getData().add(data);
+
+            bcChem.getData().add(series);
+            bcChem.widthProperty().addListener((obs,b,b1)->{
+                Platform.runLater(()->setMaxBarWidth(bcChem, xAxisChem, yAxisChem, 40, 10));
+            });
+
+
 
         }
-       // series4.getNode().lookup(".chart-series-stacked-area").setStyle("-fx-stroke-width: 1px; -fx-stroke: blue;");
-        stackedAreaChartChem.setTitle("Stacked Area Chart Chemistry");
-        stackedAreaChartChem.getData().addAll(series4);
+
+
+
+
+
+
+
+
+
+
 
 
         individual_seperate.getChildren().clear();
-        individual_seperate.addRow(0, stackedAreaChartPhysic);
-        individual_seperate.addRow(1, stackedAreaChartChem);
+        individual_seperate.addRow(0, bcPhy);
+        individual_seperate.addRow(1, bcChem);
+
         System.out.println(seriesMarks.getName());
         identity.setText("  "+seriesMarks.getIndexNo() + " :- " + seriesMarks.getName() +"  ");
         //identity.setText(seriesMarks.getIndexNo());
         identity.setAlignment(Pos.CENTER);
+        String  subjectB = "Biology: " +  seriesMarks.bioAttendance[0] +"/" +seriesMarks.bioAttendance[1];
+        String  subjectM = "C.Maths: " +  seriesMarks.mathsAttendance[0] +"/" +seriesMarks.mathsAttendance[1];
 
-        subject_attendance.setText("Physics : "+  seriesMarks.physicsAttendance[0] +"/" +seriesMarks.physicsAttendance[1]   +"\t" + "Chemistry: " +
+        String prefix = seriesMarks.isMaths()?subjectM:subjectB;
+        subject_attendance1.setText(prefix);
+        subject_attendance2.setText("Physics : "+  seriesMarks.physicsAttendance[0] +"/" +seriesMarks.physicsAttendance[1]   +"\t" + "Chemistry: " +
 
                 seriesMarks.chemistryAttendance[0] +"/" +seriesMarks.chemistryAttendance[1]);
 //        individual_seperate.getChildren().add(1, bc);
@@ -359,12 +436,18 @@ for(int sheet=0; sheet<4; sheet++) {
 
         // System.out.println("**** "+numberOfCells);
         //
-        SeriesMarks seriesMarks = table.get(row.getCell(0));
+        SeriesMarks seriesMarks = table.get(getValue(row.getCell(0)));
         if(seriesMarks ==null){
             seriesMarks = new SeriesMarks();
             seriesMarks.setIndexNo((String) getValue(row.getCell(0)));
             seriesMarks.setName((String) getValue(row.getCell(1)));
-            table.put((String) getValue(row.getCell(0)), seriesMarks);
+            name.add(seriesMarks.getName());
+
+            int ID = name.size()-1;
+            IDMap.put(ID, seriesMarks.getIndexNo());
+            table.put(seriesMarks.getIndexNo(), seriesMarks);
+
+
         }
 
 
@@ -372,24 +455,26 @@ for(int sheet=0; sheet<4; sheet++) {
             switch (sheet){
                 case 0:
                     seriesMarks.addSeriesMath(getValue(row.getCell( 4+  i)));
-                    seriesMarks.mathsAttendance[0] = getValue(row.getCell(2));
-                    seriesMarks.mathsAttendance[1] = getValue(row.getCell(3));
+                    seriesMarks.mathsAttendance[0] =(int) Float.parseFloat(getValue(row.getCell(2)));
+                    seriesMarks.mathsAttendance[1] = (int) Float.parseFloat(getValue(row.getCell(3)));
+                    seriesMarks.setMaths(true);
                     break;
                 case 1:
                     seriesMarks.addSeriesBio(getValue(row.getCell(4+  i)));
-                    seriesMarks.bioAttendance[0] = getValue(row.getCell(2));
-                    seriesMarks.bioAttendance[1] = getValue(row.getCell(3));
+                    seriesMarks.bioAttendance[0] =(int) Float.parseFloat(getValue(row.getCell(2)));
+                    seriesMarks.bioAttendance[1] = (int) Float.parseFloat(getValue(row.getCell(3)));
+                    seriesMarks.setMaths(false);
                     break;
                 case 2:
 
                     seriesMarks.addSeriesChem(getValue(row.getCell(4+  i)));
-                    seriesMarks.chemistryAttendance[0] = getValue(row.getCell(2));
-                    seriesMarks.chemistryAttendance[1] = getValue(row.getCell(3));
+                    seriesMarks.chemistryAttendance[0] = (int) Float.parseFloat(getValue(row.getCell(2)));
+                    seriesMarks.chemistryAttendance[1] = (int) Float.parseFloat(getValue(row.getCell(3)));
                     break;
                 case 3:
                     seriesMarks.addSeriesPhy(getValue(row.getCell(4+  i)));
-                    seriesMarks.physicsAttendance[0] = getValue(row.getCell(2));
-                    seriesMarks.physicsAttendance[1] = getValue(row.getCell(3));
+                    seriesMarks.physicsAttendance[0] = (int) Float.parseFloat(getValue(row.getCell(2)));
+                    seriesMarks.physicsAttendance[1] = (int) Float.parseFloat(getValue(row.getCell(3)));
                     break;
             }
 
@@ -410,7 +495,7 @@ for(int sheet=0; sheet<4; sheet++) {
 
 
 
-//        name.add(getValue(row.getCell(1)));
+//
 
         while (cellIterator.hasNext()) {
 
@@ -470,11 +555,11 @@ for(int sheet=0; sheet<4; sheet++) {
                 try {
                     SeriesMarks series = table.get(getValue(row.getCell(0)));
 
-                    series.chemistryAttendance[0] = subString(getValue(row.getCell(2)));
+                   /* series.chemistryAttendance[0] = subString(getValue(row.getCell(2)));
                     series.chemistryAttendance[1] = subString(getValue(row.getCell(3)));
 
                     series.physicsAttendance[0] = subString(getValue(row.getCell(4)));
-                    series.physicsAttendance[1] = subString(getValue(row.getCell(5)));
+                    series.physicsAttendance[1] = subString(getValue(row.getCell(5)));*/
                 }
                 catch (Exception e){
                   //  e.printStackTrace();
@@ -544,16 +629,16 @@ for(int sheet=0; sheet<4; sheet++) {
     }
 
     public synchronized  void showMarks(ActionEvent actionEvent) {
-        int index = batch_student.getSelectionModel().getSelectedIndex();
+            int index = batch_student.getSelectionModel().getSelectedIndex();
         try {
             process(index);
-            save(index);
+           // save(index);
 
 
 
         }
         catch (Exception e){
-
+            e.printStackTrace();
         }
 
 
@@ -679,5 +764,27 @@ X: 1365.0 Y: 657.0
 
         //saving the changes to a file
 
+    }
+
+
+    private void setMaxBarWidth(BarChart<String,Number> bc,CategoryAxis xAxis ,NumberAxis yAxis, double maxBarWidth, double minCategoryGap){
+        double barWidth=0;
+        do{
+            double catSpace = xAxis.getCategorySpacing();
+            double avilableBarSpace = catSpace - (bc.getCategoryGap() + bc.getBarGap());
+            barWidth = (avilableBarSpace / bc.getData().size()) - bc.getBarGap();
+            if (barWidth >maxBarWidth){
+                avilableBarSpace=(maxBarWidth + bc.getBarGap())* bc.getData().size();
+                bc.setCategoryGap(catSpace-avilableBarSpace-bc.getBarGap());
+            }
+        } while(barWidth>maxBarWidth);
+
+        do{
+            double catSpace = xAxis.getCategorySpacing();
+            double avilableBarSpace = catSpace - (minCategoryGap + bc.getBarGap());
+            barWidth = Math.min(maxBarWidth, (avilableBarSpace / bc.getData().size()) - bc.getBarGap());
+            avilableBarSpace=(barWidth + bc.getBarGap())* bc.getData().size();
+            bc.setCategoryGap(catSpace-avilableBarSpace-bc.getBarGap());
+        } while(barWidth < maxBarWidth && bc.getCategoryGap()>minCategoryGap);
     }
 }

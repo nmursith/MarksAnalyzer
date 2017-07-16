@@ -66,7 +66,7 @@ public class Controller {
         batchMarks =new ArrayList<>();
         name =new ArrayList<>();
         readFile(new File("marks.xlsx"));
-        readAttendanceFile(new File("attendance.xlsx"));
+//        readAttendanceFile(new File("attendance.xlsx"));
 
         batch_student.getItems().addAll(name);
 
@@ -74,7 +74,7 @@ public class Controller {
         batch_student.getSelectionModel().select(0);
 
         //selectFile();
-        process(0);
+        //process(0);
 
     }
 
@@ -83,9 +83,16 @@ public class Controller {
     public synchronized void process(int id){
         final  String phy = "Physics";
         final  String chem = "Chemistry";
+        final  String math = "C.Maths";
+        final  String bio = "Biology";
+
         SeriesMarks seriesMarks = batchMarks.get(id);//table.get(key);
+
         float marksPhy [] = new float[seriesMarks.getSeriesPhy().size()];
         float marksChem [] = new float[seriesMarks.getSeriesChem().size()];
+        float marksMath [] = new float[seriesMarks.getSeriesMath().size()];
+        float marksBio [] = new float[seriesMarks.getSeriesBio().size()];
+
         int i=0;
      //   System.out.println("Test: "+ marksPhy.length);
         for(String obj : seriesMarks.getSeriesPhy()){
@@ -323,76 +330,121 @@ public class Controller {
     }
 
     public void readFile(File file)  {
-
+        FileInputStream fis =null;
         try {
-            FileInputStream fis = new FileInputStream(file); //new File("marks.xlsx")
+            fis = new FileInputStream(file); //new File("marks.xlsx")
             XSSFWorkbook workbook = new XSSFWorkbook(fis);
-            XSSFSheet spreadsheet = workbook.getSheetAt(0);
-            Iterator<Row> rowIterator = spreadsheet.iterator();
-            XSSFRow row;
-            int id =0;
-            while (rowIterator.hasNext())
-            {
-
-                row = (XSSFRow) rowIterator.next();
-                Iterator <Cell> cellIterator = row.cellIterator();
-
-                if(id<2){
-                    id++;
-                    continue;
-                }
-
-                int numberOfCells = row.getPhysicalNumberOfCells();
-                int iterate = (numberOfCells - 2)/2;
-
-               // System.out.println("**** "+numberOfCells);
-                SeriesMarks seriesMarks = new SeriesMarks();
-                seriesMarks.setIndexNo((String) getValue(row.getCell(0)));
-                seriesMarks.setName((String) getValue(row.getCell(1)));
-
-                for(int i=0; i<iterate; i++){
-                    seriesMarks.addSeriesChem(getValue(row.getCell(2 + 2*i)));
-                    seriesMarks.addSeriesPhy(getValue(row.getCell(3 + 2*i)));
-                }
-
-/*
-                seriesMarks.addSeriesChem(getValue(row.getCell(2)));
-                seriesMarks.addSeriesChem(getValue(row.getCell(4)));
-
-                seriesMarks.addSeriesPhy(getValue(row.getCell(3)));
-                seriesMarks.addSeriesPhy(getValue(row.getCell(5)));
-*/
-                name.add(getValue(row.getCell(1)));
-                batchMarks.add(seriesMarks);
-                table.put((String) getValue(row.getCell(0)), seriesMarks);
 
 
-                while ( cellIterator.hasNext())
-                {
+for(int sheet=0; sheet<4; sheet++) {
 
 
-                    Cell cell = cellIterator.next();
+    XSSFSheet spreadsheet = workbook.getSheetAt(sheet);
+        Iterator<Row> rowIterator = spreadsheet.iterator();
+    XSSFRow row;
+    int id = 0;
+    while (rowIterator.hasNext()) {
 
 
-                    switch (cell.getCellType())
-                    {
-                        case Cell.CELL_TYPE_NUMERIC:
-                            System.out.print(  cell.getNumericCellValue() + " \t\t " );
-                            break;
-                        case Cell.CELL_TYPE_STRING:
-                            System.out.print( cell.getStringCellValue() + " \t\t " );
-                            break;
-                    }
-                }
-                System.out.println();
+        row = (XSSFRow) rowIterator.next();
+        Iterator<Cell> cellIterator = row.cellIterator();
+
+        if (id < 1) {
+            id++;
+            continue;
+        }
+
+        int numberOfCells = row.getPhysicalNumberOfCells();
+        int iterate = (numberOfCells - 4);
+
+        // System.out.println("**** "+numberOfCells);
+        //
+        SeriesMarks seriesMarks = table.get(row.getCell(0));
+        if(seriesMarks ==null){
+            seriesMarks = new SeriesMarks();
+            seriesMarks.setIndexNo((String) getValue(row.getCell(0)));
+            seriesMarks.setName((String) getValue(row.getCell(1)));
+            table.put((String) getValue(row.getCell(0)), seriesMarks);
+        }
+
+
+        for (int i = 0; i < iterate; i++) {
+            switch (sheet){
+                case 0:
+                    seriesMarks.addSeriesMath(getValue(row.getCell( 4+  i)));
+                    seriesMarks.mathsAttendance[0] = getValue(row.getCell(2));
+                    seriesMarks.mathsAttendance[1] = getValue(row.getCell(3));
+                    break;
+                case 1:
+                    seriesMarks.addSeriesBio(getValue(row.getCell(4+  i)));
+                    seriesMarks.bioAttendance[0] = getValue(row.getCell(2));
+                    seriesMarks.bioAttendance[1] = getValue(row.getCell(3));
+                    break;
+                case 2:
+
+                    seriesMarks.addSeriesChem(getValue(row.getCell(4+  i)));
+                    seriesMarks.chemistryAttendance[0] = getValue(row.getCell(2));
+                    seriesMarks.chemistryAttendance[1] = getValue(row.getCell(3));
+                    break;
+                case 3:
+                    seriesMarks.addSeriesPhy(getValue(row.getCell(4+  i)));
+                    seriesMarks.physicsAttendance[0] = getValue(row.getCell(2));
+                    seriesMarks.physicsAttendance[1] = getValue(row.getCell(3));
+                    break;
             }
-            fis.close();
+
+
+
+        }
+//               seriesMarks.addSeriesChem(getValue(row.getCell(2)));
+//                seriesMarks.addSeriesChem(getValue(row.getCell(4)));
+//
+//                seriesMarks.addSeriesPhy(getValue(row.getCell(3)));
+//                seriesMarks.addSeriesPhy(getValue(row.getCell(5)));
+
+
+        //batchMarks.add(seriesMarks);
+
+
+
+
+
+
+//        name.add(getValue(row.getCell(1)));
+
+        while (cellIterator.hasNext()) {
+
+
+            Cell cell = cellIterator.next();
+
+
+            switch (cell.getCellType()) {
+                case Cell.CELL_TYPE_NUMERIC:
+                    System.out.print(cell.getNumericCellValue() + " \t\t ");
+                    break;
+                case Cell.CELL_TYPE_STRING:
+                    System.out.print(cell.getStringCellValue() + " \t\t ");
+                    break;
+            }
+        }
+        System.out.println();
+    }
+
+}
+
+            //fis.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        finally {
+            try {
+                fis.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
-
 
 
     public void readAttendanceFile(File file)  {
